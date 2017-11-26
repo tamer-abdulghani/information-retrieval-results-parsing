@@ -15,3 +15,12 @@ We choose to build this project on MVC architecture. The project structures cont
 3.	Models: contains all java classes, types, and enums need to represent the data.
 4.	Helpers: contains XMLHelper, CSVHelper, and ChartHelper.
 
+# Resource Files needed
+To run the application and display the results you need to use three main files which are:
+-	Queries/Topics XML File
+-	User Formulation XML Files
+-	User Query Formulation Evaluation/Performance file.
+-	Performance Files for Three Systems (CSV files)
+
+Those files will be available soon!
+
