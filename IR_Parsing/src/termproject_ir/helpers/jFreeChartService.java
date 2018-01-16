@@ -7,6 +7,8 @@ package termproject_ir.helpers;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Shape;
+import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,7 +28,10 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.AbstractXYDataset;
 import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.TextAnchor;
+import org.jfree.util.ShapeUtilities;
 import termproject_ir.models.MeasureValuePair;
 import termproject_ir.models.Topic;
 import termproject_ir.models.UserQueryPair;
@@ -95,7 +100,7 @@ public class jFreeChartService {
         /**
          * @return the recall
          */
-        public float getRecall() {
+        public Float getRecall() {
             return recall;
         }
 
@@ -109,7 +114,7 @@ public class jFreeChartService {
         /**
          * @return the precision
          */
-        public float getPrecision() {
+        public Float getPrecision() {
             return precision;
         }
 
@@ -122,7 +127,34 @@ public class jFreeChartService {
 
         @Override
         public int compareTo(XYRecallPrecision o) {
-            return Float.compare(this.getRecall(), o.getRecall());
+            //return Float.compare(this.getRecall(), o.getRecall());
+            return this.getPrecision().compareTo(o.getPrecision());
+
+            /*if (Float.compare(this.getRecall(), o.getRecall()) > 0 && Float.compare(this.getPrecision(), o.getPrecision()) > 0) {
+                System.out.println("12");
+                return 1;
+            } else if (Float.compare(this.getRecall(), o.getRecall()) > 0 && Float.compare(this.getPrecision(), o.getPrecision()) < 0) {
+                System.out.println("123");
+                return 1;
+            } else if (Float.compare(this.getRecall(), o.getRecall()) < 0 && Float.compare(this.getPrecision(), o.getPrecision()) > 0) {
+                System.out.println("1234");
+                return -1;
+            } else if (Float.compare(this.getRecall(), o.getRecall()) < 0 && Float.compare(this.getPrecision(), o.getPrecision()) < 0) {
+                System.out.println("12345");
+                return -1;
+            } else if (Float.compare(this.getRecall(), o.getRecall()) == 0 && Float.compare(this.getPrecision(), o.getPrecision()) == 0) {
+                return 0;
+            }*/
+ /*int result = Float.compare(this.getRecall(), o.getRecall());
+            if (result == 0) {
+                // both X are equal -> compare Y too
+                result = Float.compare(this.getPrecision(), o.getPrecision());
+            }
+            
+            return result;
+             */
+            //System.out.println("heloooooooooooo");
+            // return 0;
         }
 
         /**
@@ -158,6 +190,69 @@ public class jFreeChartService {
 
         for (int i = 0; i < 50; i++) {
             ds.add(list.get(i).getRecall(), list.get(i).getPrecision(), list.get(i).getQueryId());
+        }
+
+        return ds;
+    }
+
+    public XYDataset createAllSystemsPrecisionRecall(int nbDoc, HashMap<String, HashMap<String, ArrayList<Float>>> map, boolean orderXaxis) {
+        final XYSeriesCollection ds = new XYSeriesCollection();
+        boolean orderNow = true;
+        for (Map.Entry<String, HashMap<String, ArrayList<Float>>> ele : map.entrySet()) {
+
+            ArrayList<Float> precisionValues = ele.getValue().get("P_" + nbDoc);
+            ArrayList<Float> recallValues = ele.getValue().get("recall_" + nbDoc);
+
+            ArrayList<XYRecallPrecision> list = new ArrayList<>();
+            for (int i = 0; i < 50; i++) {
+                list.add(new XYRecallPrecision(recallValues.get(i), precisionValues.get(i), ""));
+            }
+
+            if (orderXaxis && orderNow) {
+                System.out.println("000000:" + list.get(10).getRecall());
+                Collections.sort(list);
+                System.out.println("1111111:" + list.get(10).getRecall());
+                list.stream().forEach(x -> System.out.println("" + x.getRecall() + "," + x.getPrecision()));
+                orderNow = false;
+            }
+            System.out.println("asdasdas::::" + ele.getKey());
+            final XYSeries series = new XYSeries(ele.getKey().replace(".csv", ""));
+            for (int i = 0; i < 50; i++) {
+
+                series.add(list.get(i).getRecall(), list.get(i).getPrecision());
+
+            }
+            ds.addSeries(series);
+        }
+
+        return ds;
+    }
+
+    public XYDataset createAVGSystemsPrecisionRecall(ArrayList<Integer> docsNb, HashMap<String, HashMap<String, ArrayList<Float>>> map, boolean b) {
+        final XYSeriesCollection ds = new XYSeriesCollection();
+        for (Map.Entry<String, HashMap<String, ArrayList<Float>>> ele : map.entrySet()) {
+            ArrayList<Float> avgPrecisionValues = new ArrayList<>();
+            ArrayList<Float> avgRecallValues = new ArrayList<>();
+            for (Integer docNb : docsNb) {
+                ArrayList<Float> precisionValues = ele.getValue().get("P_" + docNb);
+                avgPrecisionValues.add((float) precisionValues.stream().mapToDouble(a -> a).average().getAsDouble());
+
+                ArrayList<Float> recallValues = ele.getValue().get("recall_" + docNb);
+                avgRecallValues.add((float) recallValues.stream().mapToDouble(a -> a).average().getAsDouble());
+
+            }
+            ArrayList<XYRecallPrecision> list = new ArrayList<>();
+            for (int i = 0; i < docsNb.size(); i++) {
+                list.add(new XYRecallPrecision(avgRecallValues.get(i), avgPrecisionValues.get(i), "At " + docsNb.get(i) + " docs"));
+            }
+
+            final XYSeries series = new XYSeries(ele.getKey().replace(".csv", ""));
+            for (int i = 0; i < docsNb.size(); i++) {
+
+                series.add(list.get(i).getRecall(), list.get(i).getPrecision());
+
+            }
+            ds.addSeries(series);
         }
 
         return ds;
@@ -214,8 +309,12 @@ public class jFreeChartService {
 
         @Override
         public String generateLabel(XYDataset dataset, int series, int item) {
-            LabeledXYDataset labelSource = (LabeledXYDataset) dataset;
-            return labelSource.getLabel(series, item);
+            try {
+                LabeledXYDataset labelSource = (LabeledXYDataset) dataset;
+                return labelSource.getLabel(series, item);
+            } catch (Exception e) {
+                return "";
+            }
         }
     }
 
@@ -239,7 +338,7 @@ public class jFreeChartService {
     }
 
     public static JFreeChart createScatterPlot(final XYDataset dataset, String xAxis, String yAxis) {
-        NumberAxis domain = new NumberAxis(xAxis);
+        /*NumberAxis domain = new NumberAxis(xAxis);
         NumberAxis range = new NumberAxis(yAxis);
         domain.setAutoRangeIncludesZero(false);
         XYItemRenderer renderer = new XYLineAndShapeRenderer(true, false);
@@ -251,10 +350,11 @@ public class jFreeChartService {
                 renderer.getBaseItemLabelFont().deriveFont(14f));
         renderer.setBaseItemLabelsVisible(true);
         renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        renderer.setBaseShape(ShapeUtilities.createDiagonalCross(3, 1));
         XYPlot plot = new XYPlot(dataset, domain, range, renderer);
         JFreeChart chart = new JFreeChart(
                 xAxis + " " + yAxis, JFreeChart.DEFAULT_TITLE_FONT, plot, false);
-
+         */
         JFreeChart chart2 = ChartFactory.createScatterPlot(
                 "Queries Plot", // chart title
                 xAxis, // x axis label
@@ -265,7 +365,16 @@ public class jFreeChartService {
                 false, // tooltips
                 false // urls
         );
-
+        /*
+        Shape cross = ShapeUtilities.createDiagonalCross(3, 1);
+        XYPlot xyPlot = (XYPlot) chart2.getPlot();
+        xyPlot.setDomainCrosshairVisible(true);
+        xyPlot.setRangeCrosshairVisible(true);
+        XYItemRenderer renderer = xyPlot.getRenderer();
+        renderer.setSeriesShape(0, cross);
+        renderer.setSeriesPaint(0, Color.red);
+        renderer.setBaseShape(ShapeUtilities.createDiagonalCross(3, 1));
+         */
         return chart2;
     }
 }
